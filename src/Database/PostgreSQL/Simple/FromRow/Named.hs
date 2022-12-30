@@ -22,6 +22,7 @@ module Database.PostgreSQL.Simple.FromRow.Named
 
 import Control.Exception (Exception)
 import Control.Monad.Reader (ask)
+import Control.Monad.State.Lazy (modify')
 import Control.Monad.Trans (lift)
 import Data.ByteString (ByteString)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
@@ -67,6 +68,14 @@ fieldByNameWith fieldParser columnName =
     maybeTargetColumn <-
       lift . lift . PostgresInternal.liftConversion $
         findColumn columnName rowresult
+
+    {-
+       If we don't increment the column count then postgresql-simple
+       will throw an exception: https://github.com/haskellari/postgresql-simple/blob/6cabb13959310f32a15285f8e41c2d053403d687/src/Database/PostgreSQL/Simple/Internal/PQResultUtils.hs#L97
+
+       Here is what the normal 'fieldWith' does: https://github.com/haskellari/postgresql-simple/blob/6cabb13959310f32a15285f8e41c2d053403d687/src/Database/PostgreSQL/Simple/FromRow.hs#L116-L117
+    -}
+    lift $ modify' (+ 1)
 
     case maybeTargetColumn of
       Nothing ->
