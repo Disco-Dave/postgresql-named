@@ -7,10 +7,7 @@
 --
 -- This module provides the machinery for implementing instances of
 -- 'FromRow' that deserialize based on the names of columns instead of
--- the positions of individual fields. This is particularly convenient
--- when deserializing to a Haskell record and you want the field names
--- and column names to match up. In this case 'gFromRow' can be used as
--- a generic implementation of 'fromRow'.
+-- the positions of individual fields.
 module Database.PostgreSQL.Simple.FromRow.Named
   ( -- * Deserialize individual fields based on their name
     fieldByNameWith
