@@ -22,7 +22,7 @@ module Database.PostgreSQL.Simple.FromRow.Named
 
 import Control.Exception (Exception)
 import Control.Monad.Reader (ask)
-import Control.Monad.State.Lazy (modify')
+import Control.Monad.State.Lazy (put)
 import Control.Monad.Trans (lift)
 import Data.ByteString (ByteString)
 import qualified Database.PostgreSQL.LibPQ as LibPQ
@@ -39,22 +39,6 @@ newtype NoSuchColumn = NoSuchColumn ByteString
 instance Exception NoSuchColumn
 
 
-findColumn :: ByteString -> LibPQ.Result -> IO (Maybe LibPQ.Column)
-findColumn columnName rowresult = do
-  numberOfColumns <- LibPQ.nfields rowresult
-
-  let columns = [LibPQ.Col 0 .. numberOfColumns - 1]
-
-      search column prev = do
-        name <- LibPQ.fname rowresult column
-
-        if name == Just columnName
-          then pure (Just column)
-          else prev
-
-  foldr search (pure Nothing) columns
-
-
 -- | This is similar to 'fieldWith' but instead of trying to
 -- deserialize the field at the current position it goes through all
 -- fields in the current row (starting at the beginning not the
@@ -65,17 +49,24 @@ fieldByNameWith fieldParser columnName =
   PostgresInternal.RP $ do
     PostgresInternal.Row{rowresult, row} <- ask
 
-    maybeTargetColumn <-
+    numberOfColumns <-
       lift . lift . PostgresInternal.liftConversion $
-        findColumn columnName rowresult
+        LibPQ.nfields rowresult
 
-    {-
-       If we don't increment the column count then postgresql-simple
-       will throw an exception: https://github.com/haskellari/postgresql-simple/blob/6cabb13959310f32a15285f8e41c2d053403d687/src/Database/PostgreSQL/Simple/Internal/PQResultUtils.hs#L97
+    lift $ put numberOfColumns
 
-       Here is what the normal 'fieldWith' does: https://github.com/haskellari/postgresql-simple/blob/6cabb13959310f32a15285f8e41c2d053403d687/src/Database/PostgreSQL/Simple/FromRow.hs#L116-L117
-    -}
-    lift $ modify' (+ 1)
+    maybeTargetColumn <-
+      lift . lift . PostgresInternal.liftConversion $ do
+        let columns = [LibPQ.Col 0 .. numberOfColumns - 1]
+
+            search column prev = do
+              name <- LibPQ.fname rowresult column
+
+              if name == Just columnName
+                then pure (Just column)
+                else prev
+
+        foldr search (pure Nothing) columns
 
     case maybeTargetColumn of
       Nothing ->

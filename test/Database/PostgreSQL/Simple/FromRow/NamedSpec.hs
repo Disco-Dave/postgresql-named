@@ -28,11 +28,12 @@ queryByName pool name = do
   let query =
         [sql|
           SELECT
-            id AS cat_id
-            ,name
-            ,date_of_birth
-            ,personality
-            ,color
+            c.id AS cat_id
+            ,c.name
+            ,c.date_of_birth
+            ,c.personality
+            ,c.color
+            ,c.created_at
           FROM public.cats AS c
           WHERE c.name = ?;
         |]
