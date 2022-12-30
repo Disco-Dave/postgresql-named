@@ -1,16 +1,16 @@
 module Database.PostgreSQL.Simple.FromRow.NamedSpec (spec) where
 
-import qualified Data.Time as Time
 import qualified CatDb
 import Data.Maybe (listToMaybe)
 import Data.Pool (Pool)
 import qualified Data.Pool as Pool
 import Data.Text (Text)
 import Data.Time (Day)
+import qualified Data.Time as Time
 import qualified Database.PostgreSQL.Simple as Postgres
 import Database.PostgreSQL.Simple.FromRow.Named (fieldByName)
 import Database.PostgreSQL.Simple.SqlQQ (sql)
-import Test.Hspec
+import Test.Hspec (Spec, aroundAll, describe, it, shouldBe, shouldSatisfy)
 
 
 data Cat = Cat
@@ -76,7 +76,6 @@ spec =
         catColor `shouldBe` "orange"
         catPersonality `shouldBe` "peppy"
         catDateOfBirth `shouldBe` Time.fromGregorian 2019 02 03
-
 
       it "Sarabi" $ \pool -> do
         Just Cat{..} <- queryByName pool "Sarabi"
